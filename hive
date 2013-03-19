@@ -1,0 +1,17 @@
+order = ""
+
+rednet.open("left")
+while true do
+  if order == "turn left" then order = "turn right" else order = "turn left" end
+  print("Broadcasting...")
+  rednet.broadcast("swarm report")
+  print("Waiting for response...")
+  while true do
+    id, msg, dist = rednet.receive(0.1)
+    if not id then break end
+    print("Response received: "..id..","..msg..","..dist)
+	print("Sending orders to turtle "..id)
+	rednet.send(id, order)
+  end
+  sleep(1)
+end

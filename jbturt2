@@ -1,0 +1,42 @@
+-- Standalone turtle juke box 
+
+local function insertDisc(disc)
+	term.write("Removing old disc... ")
+	if turtle.suck() then -- Goes in previously selected slot.
+		print("OK")
+	else
+		print("No disc found")
+	end
+
+	if disc > 0 and disc <= 16 then
+		term.write("Inserting disc " .. disc .. "... ")
+		if turtle.getItemCount(disc) == 1 then
+			turtle.select(disc) 
+			turtle.drop()
+			print("OK")
+			return true
+		else
+			print("error: slot empty")
+		end
+	else
+		print("Error: invalid slot number: " .. disc)
+	end
+	return false
+end
+
+if peripheral.getType("front") ~= "drive" then
+	print "No drive found"
+	return
+end
+
+while true do
+	print("Input disc number:")
+	disc = tonumber(read())
+	if disc then
+		if insertDisc(disc) then
+			disk.playAudio("front")
+			print("Playing disc")
+		end
+	end
+	print()
+end

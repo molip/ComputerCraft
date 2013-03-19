@@ -1,0 +1,47 @@
+local function insertDisc(disc)
+	term.write("Removing old disc... ")
+	if turtle.suck() then -- Goes in previously selected slot.
+		print("OK")
+	else
+		print("No disc found")
+	end
+
+	if disc > 0 and disc <= 16 then
+		term.write("Inserting disc " .. disc .. "... ")
+		if turtle.getItemCount(disc) == 1 then
+			turtle.select(disc) 
+			turtle.drop()
+			print("OK")
+			return true
+		else
+			print("error: slot empty")
+		end
+	else
+		print("Error: invalid slot number: " .. disc)
+	end
+	return false
+end
+
+print ("Turtle ID:" .. os.getComputerID())
+
+rednet.open("right")
+if not rednet.isOpen("right") then
+	print("No modem found")
+	return
+end
+
+while true do
+	senderID, msg = rednet.receive()
+	disc = string.match(msg, "PLAYDISC:(%d+)")
+	if disc then
+		disc = tonumber(disc)
+		print("PLAYDISC received, disc number" .. disc)
+		if insertDisc(disc) then
+			rednet.send(senderID, "OK")
+			print("Disc change complete, notified computer id: " .. senderID)
+		else
+			print("Error: no disc in slot: " .. disc)
+			rednet.send(senderID, "Error")
+		end
+	end
+end

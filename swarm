@@ -1,0 +1,21 @@
+rednet.open("right")
+while true do
+  print("Waiting for broadcast...")
+  id, msg, dist = rednet.receive()
+  if msg == "swarm report" then
+    print("Broadcast received, sending reply...")
+    rednet.send(id, "hello")
+    print("Waiting for orders...")
+    id, msg, dist = rednet.receive(1)
+	if msg then
+      print("Order '"..msg.."' received, executing...")
+      if msg == "turn left" then 
+	    turtle.turnLeft()
+      elseif msg == "turn right" then 
+	    turtle.turnRight()
+	  else 
+	    print("Unknown orders!")
+	  end
+    end
+  end
+end
