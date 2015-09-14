@@ -1,0 +1,36 @@
+local function DigAndMoveDown()
+  while not turtle.down() do
+    local result, error = turtle.digDown()
+    if error == "Unbreakable block detected" then
+      print("Reached bedrock")
+      return false
+    end
+  end
+  return true
+end
+
+local function Run()
+  while true do
+    if not DigAndMoveDown() then
+      return 
+    end
+    
+    while not turtle.forward() do
+      turtle.dig()
+    end
+
+    if not turtle.detect() then
+      turtle.select(2)
+      turtle.place()
+      turtle.select(1)
+    end
+    
+    while not turtle.back() do
+      sleep(1)
+    end
+
+    turtle.place()
+  end
+end
+
+Run()    
