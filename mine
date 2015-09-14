@@ -1,0 +1,148 @@
+local Blocks = 
+{
+  { name = "minecraft:diamond_ore", metadata = 0, label = "Diamond",  stop = true },
+  { name = "minecraft:lapis_ore",   metadata = 0, label = "Lapis",    stop = true },
+  { name = "ThermalFoundation:Ore", metadata = 5, label = "Shiny",    stop = true }
+}  
+
+local MaxTunnelLength = 32
+
+local function FindBlock(data)
+	for i, block in ipairs(Blocks) do
+    if block.name == data.name and block.metadata == data.metadata then
+      return block
+    end
+  end
+  return nil
+end
+
+local function CheckBlock(inspectFn)
+	local ok, data = inspectFn()
+	if ok then 
+    return FindBlock(data) 
+  end
+  return nil
+end
+
+local function DigAndMoveForward()
+	while not turtle.forward() do
+		turtle.dig()
+	end
+end
+
+local function DigAndMoveUp()
+	while not turtle.up() do
+		turtle.digUp()
+	end
+end
+
+local function DigAndMoveDown()
+	while not turtle.down() do
+		turtle.digDown()
+	end
+end
+
+local function Spin180()
+  turtle.turnLeft()
+  turtle.turnLeft()
+end
+
+local function GetTunnelReport(seen, length)
+  local msg = ""
+  for i, block in ipairs(Blocks) do
+    if seen[block] then
+      msg = msg .. block.label .. ": " .. seen[block] .. "\n"
+    end
+  end
+  msg = msg .. "Length: " .. length
+  return msg
+end
+
+local function Remember(block, seen)
+  if block then
+    if not seen[block] then 
+      seen[block] = 1
+    else
+      seen[block] = seen[block] + 1
+    end
+  end
+end
+
+local function ReturnTunnel(seen, offset)
+  local up = false
+  Spin180()
+  while offset > 0 do
+    local blockUp = CheckBlock(turtle.inspectUp) 
+    if not up and not (blockUp and blockUp.stop) then
+      DigAndMoveUp()
+      up = true
+      blockUp = CheckBlock(turtle.inspectUp) 
+    end
+    if up then
+      Remember(blockUp, seen)
+      local blockFwd = CheckBlock(turtle.inspect)
+      if blockFwd and blockFwd.stop then
+        DigAndMoveDown()
+        up = false
+      end
+    end
+    DigAndMoveForward()
+    offset = offset - 1
+  end
+
+  if up then
+    DigAndMoveDown()
+  end
+end
+
+local function FinishTunnel(seen, offset)
+  Spin180()
+  if next(seen) then
+    turtle.place(GetTunnelReport(seen, offset))
+  end
+end
+
+local function DoTunnel()
+  local offset = 0
+  local seen = {}
+  
+  while true do
+    local blockUp = CheckBlock(turtle.inspectUp) 
+    local blockDown = CheckBlock(turtle.inspectDown) 
+    local blockFwd = CheckBlock(turtle.inspect) 
+    Remember(blockUp, seen)
+    Remember(blockDown, seen)
+    Remember(blockFwd, seen)
+    if offset == MaxTunnelLength or blockFwd and blockFwd.stop then
+      if offset > 0 then
+        ReturnTunnel(seen, offset)
+        FinishTunnel(seen, offset)
+      end
+      break
+    end
+    DigAndMoveForward()
+    offset = offset + 1
+  end
+end
+
+local function Run()
+  while true do
+    local fuel = turtle.getFuelLevel()
+    print("Fuel: " .. fuel)
+    if fuel < MaxTunnelLength * 3 then --Need extra fuel for going up and down.
+      print("More fuel please!")
+      break
+    end
+    if turtle.getItemCount() == 0 then 
+      print("More signs please!")
+      break
+    end
+    DoTunnel()
+    turtle.turnLeft()
+    DigAndMoveForward()
+    DigAndMoveForward()
+    turtle.turnRight()
+  end
+end  
+
+Run()
