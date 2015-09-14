@@ -1,3 +1,6 @@
+-- Setup...
+-- Slot 1: Signs
+
 local Blocks = 
 {
   { name = "minecraft:diamond_ore", metadata = 0, label = "Diamond",  stop = true },
@@ -5,7 +8,7 @@ local Blocks =
   { name = "ThermalFoundation:Ore", metadata = 5, label = "Shiny",    stop = true }
 }  
 
-local MaxTunnelLength = 32
+local MaxTunnelLength = 64
 
 local function FindBlock(data)
 	for i, block in ipairs(Blocks) do
@@ -125,14 +128,54 @@ local function DoTunnel()
   end
 end
 
+local function SelectSlot(blockName)
+  data = turtle.getItemDetail()
+  if (data and data.name == blockName) then
+    return true
+  end
+  
+  for i = 1, 16 do
+    data = turtle.getItemDetail(i)
+    if (data and data.name == blockName) then
+      turtle.select(i)
+      return true
+    end
+  end
+  
+  return false
+end
+
+local function Refuel()
+  local minLevel = MaxTunnelLength * 3 --Enough for 1 tunnel (need extra for going up and down).
+  local maxLevel = MaxTunnelLength * 10 
+
+  local oldLevel = turtle.getFuelLevel()
+  print("Fuel level:" .. oldLevel)
+  
+  if oldLevel >= maxLevel then return end
+
+  local complained = false
+  while turtle.getFuelLevel() < maxLevel do
+    if SelectSlot("minecraft:coal") then
+      turtle.refuel(1)
+      print("Refuelling... new fuel level:".. turtle.getFuelLevel())
+    else
+      if turtle.getFuelLevel() >= minLevel then 
+        break 
+      else 
+        if not complained then 
+          print("More fuel please!")
+          complained = true
+        end
+      end
+    end
+  end
+end
+
 local function Run()
   while true do
-    local fuel = turtle.getFuelLevel()
-    print("Fuel: " .. fuel)
-    if fuel < MaxTunnelLength * 3 then --Need extra fuel for going up and down.
-      print("More fuel please!")
-      break
-    end
+    Refuel()
+    turtle.select(1)
     if turtle.getItemCount() == 0 then 
       print("More signs please!")
       break
