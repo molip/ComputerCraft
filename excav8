@@ -1,13 +1,15 @@
 
 local tArgs = { ... }
-if #tArgs ~= 1 then
-	print( "Usage: excavate <diameter>" )
+if #tArgs ~= 3 then
+	print( "Usage: excavate <first edge> <second edge> <depth>" )
 	return
 end
 
 -- Mine in a quarry pattern until we hit something we can't dig
-local size = tonumber( tArgs[1] )
-if size < 1 then
+local size1 = tonumber( tArgs[1] )
+local size2 = tonumber( tArgs[2] )
+local size3 = tonumber( tArgs[3] )
+if size1 < 1 or size2 < 1 or size3 < 1 then
 	print( "Excavate diameter must be positive" )
 	return
 end
@@ -176,7 +178,7 @@ local function tryDown()
 		print( "Descended "..depth.." metres." )
 	end
 
-	return true
+	return depth < size3
 end
 
 local function turnLeft()
@@ -287,8 +289,8 @@ end
 local alternate = 0
 local done = false
 while not done do
-	for n=1,size do
-		for m=1,size-1 do
+	for n=1,size2 do
+		for m=1,size1-1 do
 			if not tryForwards() then
 				done = true
 				break
@@ -297,7 +299,7 @@ while not done do
 		if done then
 			break
 		end
-		if n<size then
+		if n<size2 then
 			if math.fmod(n + alternate,2) == 0 then
 				turnLeft()
 				if not tryForwards() then
@@ -318,24 +320,25 @@ while not done do
 	if done then
 		break
 	end
-	
-	if size > 1 then
-		if math.fmod(size,2) == 0 then
-			turnRight()
-		else
-			if alternate == 0 then
-				turnLeft()
-			else
-				turnRight()
-			end
+
+	if size1 > 1 then
+		if math.fmod(size2,2) == 1 then
 			alternate = 1 - alternate
 		end
+
+    if alternate == 1 then
+      turnLeft()
+    else
+      turnRight()
+    end    
 	end
-	
 	if not tryDown() then
 		done = true
 		break
 	end
+
+	size1, size2 = size2, size1
+
 end
 
 print( "Returning to surface..." )
