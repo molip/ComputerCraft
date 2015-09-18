@@ -1,30 +1,27 @@
--- Setup...
--- Slot 1: Signs
-
-local Blocks = 
+local avoidBlocks = 
 {
-  { name = "minecraft:diamond_ore", metadata = 0, label = "Diamond",  stop = true },
-  { name = "minecraft:lapis_ore",   metadata = 0, label = "Lapis",    stop = true },
-  { name = "ThermalFoundation:Ore", metadata = 5, label = "Shiny",    stop = true }
+  { name = "minecraft:diamond_ore", metadata = 0 },
+  { name = "minecraft:lapis_ore",   metadata = 0 },
 }  
 
-local MaxTunnelLength = 64
+local direction = { fwd=1, up=2, down=3 }
+local moveFn = { turtle.forward, turtle.up, turtle.down }
+local digFn = { turtle.dig, turtle.digUp, turtle.digDown }
+local inspectFn = { turtle.inspect, turtle.inspectUp, turtle.inspectDown }
 
-local function FindBlock(data)
-	for i, block in ipairs(Blocks) do
-    if block.name == data.name and block.metadata == data.metadata then
-      return block
+local MaxTunnelLength = 16 
+local MaxFuelLevel = 400
+
+local function WantAvoid(dir)
+	local ok, data = inspectFn[dir]()
+	if ok then 
+    for i, block in ipairs(avoidBlocks) do
+      if block.name == data.name and block.metadata == data.metadata then
+        return true
+      end
     end
   end
-  return nil
-end
-
-local function CheckBlock(inspectFn)
-	local ok, data = inspectFn()
-	if ok then 
-    return FindBlock(data) 
-  end
-  return nil
+  return false
 end
 
 local function SelectSlot(blockName)
@@ -75,152 +72,63 @@ local function DumpItemsIfFull()
   end
 end
 
-local function DigAndMoveForward()
-	while not turtle.forward() do
-		turtle.dig()
-	end
-  DumpItemsIfFull()
-end
-
-local function DigAndMoveUp()
-	while not turtle.up() do
-		turtle.digUp()
-	end
-  DumpItemsIfFull()
-end
-
-local function DigAndMoveDown()
-	while not turtle.down() do
-		turtle.digDown()
-	end
-  DumpItemsIfFull()
-end
-
-local function Spin180()
-  turtle.turnLeft()
-  turtle.turnLeft()
-end
-
-local function GetTunnelReport(seen, length)
-  local msg = ""
-  for i, block in ipairs(Blocks) do
-    if seen[block] then
-      msg = msg .. block.label .. ": " .. seen[block] .. "\n"
-    end
-  end
-  msg = msg .. "Length: " .. length
-  return msg
-end
-
-local function Remember(block, seen)
-  if block then
-    if not seen[block] then 
-      seen[block] = 1
-    else
-      seen[block] = seen[block] + 1
-    end
-  end
-end
-
-local function ReturnTunnel(seen, offset)
-  local up = false
-  Spin180()
-  while offset > 0 do
-    local blockUp = CheckBlock(turtle.inspectUp) 
-    if not up and not (blockUp and blockUp.stop) then
-      DigAndMoveUp()
-      up = true
-      blockUp = CheckBlock(turtle.inspectUp) 
-    end
-    if up then
-      Remember(blockUp, seen)
-      local blockFwd = CheckBlock(turtle.inspect)
-      if blockFwd and blockFwd.stop then
-        DigAndMoveDown()
-        up = false
-      end
-    end
-    DigAndMoveForward()
-    offset = offset - 1
-  end
-
-  if up then
-    DigAndMoveDown()
-  end
-end
-
-local function FinishTunnel(seen, offset)
-  Spin180()
-  if next(seen) then
-    turtle.place(GetTunnelReport(seen, offset))
-  end
-end
-
-local function DoTunnel()
-  local offset = 0
-  local seen = {}
-  
-  while true do
-    local blockUp = CheckBlock(turtle.inspectUp) 
-    local blockDown = CheckBlock(turtle.inspectDown) 
-    local blockFwd = CheckBlock(turtle.inspect) 
-    Remember(blockUp, seen)
-    Remember(blockDown, seen)
-    Remember(blockFwd, seen)
-    if offset == MaxTunnelLength or blockFwd and blockFwd.stop then
-      if offset > 0 then
-        ReturnTunnel(seen, offset)
-        FinishTunnel(seen, offset)
-      end
-      break
-    end
-    DigAndMoveForward()
-    offset = offset + 1
-  end
-end
-
 local function Refuel()
-  local minLevel = MaxTunnelLength * 3 --Enough for 1 tunnel (need extra for going up and down).
-  local maxLevel = MaxTunnelLength * 10 
-
-  local oldLevel = turtle.getFuelLevel()
-  print("Fuel level:" .. oldLevel)
-  
-  if oldLevel >= maxLevel then return end
-
-  local complained = false
-  while turtle.getFuelLevel() < maxLevel do
-    if SelectSlot("minecraft:coal") then
-      turtle.refuel(1)
-      print("Refuelling... new fuel level:".. turtle.getFuelLevel())
-    else
-      if turtle.getFuelLevel() >= minLevel then 
-        break 
-      else 
-        if not complained then 
-          print("More fuel please!")
-          complained = true
-        end
-        sleep(1) -- TODO: Use an event.
-      end
-    end
+  while turtle.getFuelLevel() < MaxFuelLevel and SelectSlot("minecraft:coal") do
+    turtle.refuel(1)
+    print("Refuelled... fuel level now:".. turtle.getFuelLevel())
   end
+  assert(turtle.getFuelLevel() > 0, "Out of fuel!")
+end
+
+local function Dig(dir)
+  digFn[dir]()
+  Refuel()
+  DumpItemsIfFull()
+end
+
+local function DigAndMove(dir)
+  while not moveFn[dir]() do
+    Dig(dir)
+  end
+    Refuel()
+end
+
+local function Turn180()
+  turtle.turnLeft()
+  turtle.turnLeft()
 end
 
 local function Run()
   SelectEnderChest() -- Just to check we've got one.
+  local offsetH = 0
+  local offsetV = 0
+  local delta = 1
+  
   while true do
-    Refuel()
-    turtle.select(1)
-    if turtle.getItemCount() == 0 then 
-      print("More signs please!")
-      break
+    local avoidFwd = WantAvoid(direction.fwd) 
+    local avoidUp = WantAvoid(direction.up) 
+    local avoidDown = WantAvoid(direction.down) 
+    
+    if not avoidUp then Dig(direction.up) end
+    if not avoidDown then Dig(direction.down) end
+   
+    if offsetH == MaxTunnelLength - 1 and delta > 0 then 
+      turtle.turnLeft()
+      DigAndMove(direction.fwd) -- TODO: Avoid. 
+      turtle.turnLeft()
+      delta = -1
+    elseif offsetH == 0 and delta < 0 then 
+      turtle.turnRight()
+      DigAndMove(direction.fwd) -- TODO: Avoid. 
+      turtle.turnRight()
+      delta = 1
+    elseif avoidFwd then
+        break
+    else
+      DigAndMove(direction.fwd)
+      offsetH = offsetH + delta
     end
-    DoTunnel()
-    turtle.turnLeft()
-    DigAndMoveForward()
-    DigAndMoveForward()
-    turtle.turnRight()
+
   end
 end  
 
