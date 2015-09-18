@@ -27,22 +27,73 @@ local function CheckBlock(inspectFn)
   return nil
 end
 
+local function SelectSlot(blockName)
+  data = turtle.getItemDetail()
+  if (data and data.name == blockName) then
+    return true
+  end
+  
+  for i = 1, 16 do
+    data = turtle.getItemDetail(i)
+    if (data and data.name == blockName) then
+      turtle.select(i)
+      return true
+    end
+  end
+  
+  return false
+end
+
+local function SelectEnderChest()
+  if not SelectSlot("EnderStorage:enderChest") and not SelectSlot("minecraft:ender_chest") then
+    assert(false, "No ender chest found")
+  end
+end
+
+local function DumpItems()
+  -- Place the chest. 
+  SelectEnderChest()
+  assert(not turtle.inspectDown() or turtle.digDown(), "Can't dig down")
+  assert(turtle.placeDown(), "Can't place chest")
+
+  -- Dump the stuff. 
+  for i = 2, 16 do
+    turtle.select(i)
+    if turtle.getItemCount(i) > 0 then
+      assert(turtle.dropDown(), "Can't drop items - is the chest full?")
+    end
+  end
+
+  -- Retrieve the chest. 
+  turtle.select(1)
+  assert(turtle.digDown(), "Can't break the chest")
+end
+
+local function DumpItemsIfFull()
+  if turtle.getItemCount(16) > 0 then
+    DumpItems()
+  end
+end
+
 local function DigAndMoveForward()
 	while not turtle.forward() do
 		turtle.dig()
 	end
+  DumpItemsIfFull()
 end
 
 local function DigAndMoveUp()
 	while not turtle.up() do
 		turtle.digUp()
 	end
+  DumpItemsIfFull()
 end
 
 local function DigAndMoveDown()
 	while not turtle.down() do
 		turtle.digDown()
 	end
+  DumpItemsIfFull()
 end
 
 local function Spin180()
@@ -128,23 +179,6 @@ local function DoTunnel()
   end
 end
 
-local function SelectSlot(blockName)
-  data = turtle.getItemDetail()
-  if (data and data.name == blockName) then
-    return true
-  end
-  
-  for i = 1, 16 do
-    data = turtle.getItemDetail(i)
-    if (data and data.name == blockName) then
-      turtle.select(i)
-      return true
-    end
-  end
-  
-  return false
-end
-
 local function Refuel()
   local minLevel = MaxTunnelLength * 3 --Enough for 1 tunnel (need extra for going up and down).
   local maxLevel = MaxTunnelLength * 10 
@@ -167,12 +201,14 @@ local function Refuel()
           print("More fuel please!")
           complained = true
         end
+        sleep(1) -- TODO: Use an event.
       end
     end
   end
 end
 
 local function Run()
+  SelectEnderChest() -- Just to check we've got one.
   while true do
     Refuel()
     turtle.select(1)
@@ -189,3 +225,4 @@ local function Run()
 end  
 
 Run()
+
