@@ -60,10 +60,15 @@ local function DumpItems()
   assert(not chest or turtle.placeDown(), "Can't place chest")
 
   -- Dump the stuff. 
-  for i = 2, 16 do
+  local gotCoal = false
+  for i = 1, 16 do
     turtle.select(i)
     if turtle.getItemCount(i) > 0 then
-      assert(turtle.dropDown(), "Can't drop items - is the chest full?")
+      if not gotCoal and turtle.getItemDetail(i).name == "minecraft:coal" then
+        gotCoal = true
+      else 
+        assert(turtle.dropDown(), "Can't drop items - is the chest full?")
+      end
     end
   end
 
