@@ -88,20 +88,25 @@ local function Refuel()
     turtle.refuel(1)
     print("Refuelled... fuel level now:".. turtle.getFuelLevel())
   end
-  assert(turtle.getFuelLevel() > 0, "Out of fuel!")
+
+  if turtle.getFuelLevel() == 0 then
+    print("More fuel please!")
+    while turtle.getFuelLevel() == 0 do
+      sleep(1)
+    end
+  end
 end
 
 local function Dig(dir)
   digFn[dir]()
-  Refuel()
   DumpItemsIfFull()
 end
 
 local function DigAndMove(dir)
+  Refuel()
   while not moveFn[dir]() do
     Dig(dir)
   end
-    Refuel()
 end
 
 local function Turn180()
