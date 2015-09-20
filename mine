@@ -134,27 +134,34 @@ local function Run()
     if not avoidUp then Dig(direction.up) end
     if not avoidDown then Dig(direction.down) end
    
+    local function Step()
+      if avoidFwd then
+        print("Please remove this block!")
+        while WantAvoid(direction.fwd) do
+          sleep(1)
+        end
+      end
+      DigAndMove(direction.fwd)
+    end
+    
     if offsetH == MaxTunnelLength - 1 and delta > 0 then 
       width = width + 1
       if width == MaxTunnelWidth then break end
       turtle.turnLeft()
-      DigAndMove(direction.fwd) -- TODO: Avoid. 
+      Step()
       turtle.turnLeft()
       delta = -1
     elseif offsetH == 0 and delta < 0 then 
       width = width + 1
       if width == MaxTunnelWidth then break end
       turtle.turnRight()
-      DigAndMove(direction.fwd) -- TODO: Avoid. 
+      Step()
       turtle.turnRight()
       delta = 1
-    elseif avoidFwd then
-        break
     else
-      DigAndMove(direction.fwd)
+      Step()
       offsetH = offsetH + delta
     end
-
   end
 end  
 
