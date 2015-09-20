@@ -50,16 +50,14 @@ local function SelectSlot(blockName)
 end
 
 local function SelectEnderChest()
-  if not SelectSlot("EnderStorage:enderChest") and not SelectSlot("minecraft:ender_chest") then
-    assert(false, "No ender chest found")
-  end
+  return SelectSlot("EnderStorage:enderChest") or SelectSlot("minecraft:ender_chest") 
 end
 
 local function DumpItems()
   -- Place the chest. 
-  SelectEnderChest()
+  local chest = SelectEnderChest()
   assert(not turtle.inspectDown() or turtle.digDown(), "Can't dig down")
-  assert(turtle.placeDown(), "Can't place chest")
+  assert(not chest or turtle.placeDown(), "Can't place chest")
 
   -- Dump the stuff. 
   for i = 2, 16 do
@@ -71,7 +69,7 @@ local function DumpItems()
 
   -- Retrieve the chest. 
   turtle.select(1)
-  assert(turtle.digDown(), "Can't break the chest")
+  assert(not chest or turtle.digDown(), "Can't break the chest")
 end
 
 local function DumpItemsIfFull()
@@ -107,7 +105,12 @@ local function Turn180()
 end
 
 local function Run()
-  SelectEnderChest() -- Just to check we've got one.
+  if not SelectEnderChest() then -- Just to check we've got one.
+    print("Warning: No ender chest found")
+  end
+
+  print("Fuel level: ".. turtle.getFuelLevel())
+
   local offsetH = 0
   local offsetV = 0
   local delta = 1
