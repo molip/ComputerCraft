@@ -1,7 +1,11 @@
 local avoidBlocks = 
 {
   { name = "minecraft:diamond_ore", metadata = 0 },
+  { name = "minecraft:emerald_ore", metadata = 0 },
   { name = "minecraft:lapis_ore",   metadata = 0 },
+  { name = "denseores:block0",      metadata = 2 }, -- Dense lapiz
+  { name = "denseores:block0",      metadata = 3 }, -- Dense diamond
+  { name = "denseores:block0",      metadata = 4 }, -- Dense emerald
 }  
 
 local direction = { fwd=1, up=2, down=3 }
