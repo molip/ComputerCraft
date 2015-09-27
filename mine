@@ -93,6 +93,8 @@ local function Refuel()
     print("Refuelled... fuel level now:".. turtle.getFuelLevel())
   end
 
+  turtle.select(1)
+
   if turtle.getFuelLevel() == 0 then
     print("More fuel please!")
     while turtle.getFuelLevel() == 0 do
@@ -122,6 +124,8 @@ local function Run()
   if not SelectEnderChest() then -- Just to check we've got one.
     print("Warning: No ender chest found")
   end
+
+  turtle.select(1)
 
   print("Fuel level: ".. turtle.getFuelLevel())
 
